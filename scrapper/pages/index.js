@@ -3,33 +3,47 @@ import styles from '@/styles/Home.module.css'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import socketIOClient from 'socket.io-client';
-
+import '@/styles/Home.module.css'
 export default function Home() {
-
   const [job, setJob] = useState('')
   const [results, setResults] = useState([])
   const [loader, setLoader] = useState(false)
   const [items, setItems] = useState([])
+  const [statuss, setStatuss] = useState()
+  const [numberOfProducts, setNumberOfProducts] = useState('');
+  const [filter, setFilter] = useState(1);
+
+
+  let count = 0
+  const handleSelectChange = (event) => {
+    setNumberOfProducts(event.target.value);
+  };
+  const handleFilter = (event) => {
+    setFilter(event.target.value);
+  };
 
   const ref1 = useRef(null)
   const socket = socketIOClient('http://localhost:4000');
 
-
-
   socket.on('connect', () => {
-    console.log('Connected to stream');
+    // console.log('Connected to stream');
   });
+
+  socket.on('error', (response) => {
+    alert(response)
+  });
+
+  socket.on('status', (response) => {
+    setStatuss(response)
+  })
 
   let arr = []
   socket.on('products', (response) => {
     // const range = document.createRange();
     // const fragment = range.createContextualFragment(response);
     // ref1.current.appendChild(fragment);
-    console.log('asdf',response)
     setItems(prevItems => [...prevItems, response])
   })
-
-
   const handleJob = async () => {
     setResults([])
     if (job == '') {
@@ -37,17 +51,14 @@ export default function Home() {
     }
     let query2 = job
     setLoader(true)
-    const res = await axios.get(`http://localhost:4000/products/?name=${query2}`);
+    const res = await axios.get(`http://localhost:4000/products/?name=${query2}/?count=${numberOfProducts}/?filter=${filter}`);
     const response = res.data
 
   }
 
-
   const handleSubmit = () => {
 
   }
-
-
 
   return (
     <>
@@ -65,11 +76,40 @@ export default function Home() {
           <div className="shadow sm:overflow-hidden sm:rounded-md">
             <div className="space-y-6 px-4 py-5 sm:p-6 dark:border-gray-700 dark:text-gray-400  dark:bg-gray-800">
               <div className="grid">
-                <div className="w-full flex align-bottom gap-1 justify-end flex-col" style={{ alignItems: 'flex-end' }}>
+                <div className="w-full flex align-bottom gap-1 justify-end" style={{ alignItems: 'flex-end' }}>
+
                   <div className='w-full flex flex-col'>
                     <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Search Products</label>
                     <input type="text" value={job} onChange={(e) => setJob(e.target.value)} id="text" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 w-96" placeholder="Search Products" required />
                   </div>
+
+                  <select
+                    id="numberOfProducts"
+                    value={numberOfProducts}
+                    onChange={handleSelectChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  >
+                    <option value="">How many products you want to search</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="150">150</option>
+                    <option value="200">200</option>
+                  </select>
+
+                  <select
+                    id="numberOfProducts"
+                    value={filter}
+                    onChange={handleFilter}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  >
+                    <option value="">Select the filter</option>
+                    <option value="0">Price Low to High</option>
+                    <option value="1">Price High to Low</option>
+                    <option value="2">Avg. Customer Review</option>
+                    <option value="3">Newest Arrival</option>
+                    <option value="4">Best Sellers</option>
+                  </select>
+
                   <div style={{ height: 'fit-content' }}>
                     <button onClick={handleJob} className="mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
                   </div>
@@ -79,20 +119,51 @@ export default function Home() {
           </div>
         </form>
 
-        <div style={{ width: '32.5rem' }} className="shadow sm:overflow-hidden sm:rounded-md mt-5">
+        <div style={{ width: '100%' }} className="shadow sm:overflow-hidden sm:rounded-md mt-5">
           <div className="space-y-6 px-4 py-5 sm:p-6 dark:border-gray-700 dark:text-gray-400  dark:bg-gray-800">
             <div className="grid">
               <div className="w-full flex flex-col">
                 <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Results</label>
                 <div>
                   {
-                    <div id='resultroot' ref={ref1}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      {items.length == 0 && statuss}
                       {
-                        items?.map((item, i) => {
-                          return (
-                            <div key={i} dangerouslySetInnerHTML={{ __html: item.toString() }} />
-                          )
-                        })
+                        (items.length == 0 && statuss) && (
+                          <div role="status">
+                            <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
+                              <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
+                            </svg>
+                            <span class="sr-only">Loading...</span>
+                          </div>
+                        )
+                      }
+                    </div>
+                  }
+                  {
+                    <div id='resultroot' ref={ref1} style={{ display: 'flex', flexWrap: 'wrap' }}>
+                      {
+
+                        items.length > numberOfProducts ?
+                          items?.slice(1, numberOfProducts).map((item, i) => {
+                            if (!item.includes('s-searchgrid-carousel')) {
+                              return (
+                                <div style={{ width: '32%', marginBottom: '4rem' }} key={i} dangerouslySetInnerHTML={{ __html: item.toString() }} />
+                              )
+                            }
+                          })
+                          :
+                          items?.slice(1).map((item, i) => {
+                            if (!item.includes('s-searchgrid-carousel')) {
+                              return (
+                                <div style={{ width: '32%', marginBottom: '4rem' }} key={i} dangerouslySetInnerHTML={{ __html: item.toString() }} />
+                              )
+                            }
+                          })
+                      }
+                      {
+
                       }
                     </div>
                   }

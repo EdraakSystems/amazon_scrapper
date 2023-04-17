@@ -1,9 +1,8 @@
 .main {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   align-items: center;
-  padding: 6rem;
+  padding: 2rem;
   min-height: 100vh;
 }
 
@@ -275,4 +274,15 @@
   to {
     transform: rotate(0deg);
   }
+}
+
+#resultroot{
+  display: flex;
+  flex-wrap: wrap;
+}
+
+#resultroot div{
+  width: 50%;
+  padding: 1rem;
+  box-shadow: 0px 0px 10px;
 }
